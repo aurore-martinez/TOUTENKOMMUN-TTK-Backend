@@ -61,4 +61,26 @@ router.post('/signin', (req, res) => {
   });
 });
 
+/* GET users profil */
+router.get('/profil/:token', (req, res) => {
+  User.findOne({ token: req.params.token }).then(userfound => {
+    console.log(userfound.address)
+    if (userfound) {
+      res.json({ result: true, 
+        firstname: userfound.firstname,
+        lastname: userfound.lastname,
+        username: userfound.username ,
+        email: userfound.email,
+        phone: userfound.phone,
+        photo: userfound.photo,
+        address: userfound.address,
+        community: userfound.community,
+        object: userfound.object,
+      });
+    } else {
+      res.json({ result: false, error: 'User not found' });
+    }
+  });
+});
+
 module.exports = router;
