@@ -71,7 +71,7 @@ router.post('/create', async (req, res) => {
 
 	newCommunity.save()
 		.then(() => {
-			res.json({ result: true });
+			res.json({ result: true, accessCode, name });
 		})
 		.catch(err => {
 			res.json({ result: false, error: err });
