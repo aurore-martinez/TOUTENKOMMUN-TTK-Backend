@@ -17,7 +17,7 @@ const userSchema = mongoose.Schema({
 	email: String,
 	phone: String,
 	photo: String,
-	address: addressSchema,
+	address: [addressSchema],
 	community: [{ type: mongoose.Schema.Types.ObjectId, ref: 'communities' }],
 	object: [{ type: mongoose.Schema.Types.ObjectId, ref: 'objects' }],
 });

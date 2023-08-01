@@ -30,7 +30,7 @@ router.post('/signup', (req, res) => {
         photo: req.body.photo,
         address: [],
         community: [],
-        object:[],
+        object: [],
       });
 
       newUser.save().then(data => {

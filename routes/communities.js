@@ -17,9 +17,14 @@ router.post('/join', async (req, res) => {
 	const { token, accessCode, name } = req.body;
 
 	const commu = await Community.findOne({ name });
-	if (commu.accessCode === accessCode) {
+  const user = await User.findOne({ token });
+
+  if (user.community.includes(commu._id)) {
+    res.json({ result: false, error: 'Community already joined' });
+    return;
+  } else if (commu.accessCode === accessCode) {
 		const updateRes = await User.updateOne({ token }, { $push: { community: commu._id } });
-		res.json({ result: updateRes.modifiedCount === 1 });
+		res.json({ result: updateRes.modifiedCount === 1, localisation: commu.localisation, description: commu.description, name: commu.name });
 	} else {
 		res.json({ result: false, error: 'Wrong access code' });
 	}
