@@ -9,6 +9,7 @@ var logger = require('morgan');
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 var communitiesRouter = require('./routes/communities');
+var searchRouter = require('./routes/search');
 
 var app = express();
 const fileUpload = require('express-fileupload');
@@ -26,5 +27,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/communities', communitiesRouter);
+app.use('/search', searchRouter);
 
 module.exports = app;

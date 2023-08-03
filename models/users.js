@@ -19,7 +19,6 @@ const userSchema = mongoose.Schema({
 	photo: String,
 	address: [addressSchema],
 	community: [{ type: mongoose.Schema.Types.ObjectId, ref: 'communities' }],
-	object: [{ type: mongoose.Schema.Types.ObjectId, ref: 'objects' }],
 });
 
 const User = mongoose.model('users', userSchema);
