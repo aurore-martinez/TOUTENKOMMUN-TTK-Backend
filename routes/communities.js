@@ -104,4 +104,6 @@ router.get('/feed/:token', async (req, res) => {
 	res.json({ result: true, items: objectsfound });
 });
 
+// supprimer une communauté
+
 module.exports = router;

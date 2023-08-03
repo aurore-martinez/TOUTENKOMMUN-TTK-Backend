@@ -77,7 +77,7 @@ router.get('/profil/:token', (req, res) => {
         photo: userfound.photo,
         address: userfound.address,
         community: userfound.community,
-        object: userfound.object,
+        // object: userfound.object,
       });
     } else {
       res.json({ result: false, error: 'User not found' });
@@ -90,7 +90,7 @@ router.get('/profil/:token', (req, res) => {
 
 //POST Route 1) Ajouter un objet pour un user, dans une communauté
 // Route pour ajouter un objet pour un utilisateur et l'inscrire dans une ou plusieurs communautés
-router.post('/profil/:token/object', async (req, res) => {
+router.post('/profil/object/:token', async (req, res) => {
   // Vérifier si les champs obligatoires sont présents dans le corps de la requête
   if (!checkBody(req.body, ['name'])) {
     res.json({ result: false, error: 'Object name is required' });
@@ -104,15 +104,16 @@ router.post('/profil/:token/object', async (req, res) => {
     return;
   }
 
-  // Vérifier si l'objet existe déjà dans la base de données
-  const existingObject = await Object.findOne({ name: { $regex: new RegExp(req.body.name, 'i') } });
+  // Vérifier si l'objet existe déjà dans la base de données pour le user concerné
+  const existingObject = await Object.findOne({ name: { $regex: new RegExp(req.body.name, 'i')}, idUser: user._id });
   if (existingObject) {
-    res.json({ result: false, error: 'Object already exists' });
+    res.json({ result: false, error: 'Object already exists for this user' });
     return;
   }
 
   // Créer un nouvel objet avec les données fournies dans le corps de la requête
   const newObject = new Object({
+    idUser: user._id,
     name: req.body.name,
     description: req.body.description,
     photo: req.body.photo,
@@ -125,7 +126,7 @@ router.post('/profil/:token/object', async (req, res) => {
   await newObject.save();
 
   // Ajouter l'ID de l'objet nouvellement créé à la liste des objets de l'utilisateur
-  user.object.push(newObject._id);
+  // user.object.push(newObject._id);
 
   // Vérifier si des communautés sont spécifiées pour cet objet
   if (req.body.communities && Array.isArray(req.body.communities)) {
@@ -149,28 +150,32 @@ router.post('/profil/:token/object', async (req, res) => {
 
 
 //GET : Route 2) Afficher les objets d'un user, peu importe la/les communautés rattachées aux objets
-router.get('/profil/:token/objects', (req, res) => {
-  // Vérifier si l'utilisateur existe en fonction du token fourni dans l'URL
+router.get('/profil/objects/:token', (req, res) => {
+  // Vérifier si des objets existent en fonction du token fourni dans l'URL
   User.findOne({ token: req.params.token })
-
-    //path: 'object' indique que nous voulons peupler le champ object de l'utilisateur, qui contient les références aux objets.
-    //populate: { path: 'availableIn', model: 'communities' } indique que nous voulons peupler le champ availableIn de chaque objet, qui contient les références aux communautés.
-    /*"Peupler" les données signifie remplacer les IDs des références par les documents complets associés, en effectuant une requête supplémentaire pour récupérer les données associées.
-    Lorsque nous appelons .populate() sur ce champ "object", Mongoose exécute une requête pour récupérer les détails complets de chaque objet associé à l'utilisateur, et remplace les IDs des objets par les documents d'objets complets. */
-    //model: 'communities' indique que nous utilisons le modèle "communities" pour peupler les détails des communautés
-
-    .populate({ path: 'object', populate: { path: 'availableIn', model: 'communities' } })
     .then((user) => {
       if (!user) {
-        // Si l'utilisateur n'est pas trouvé, renvoyer une réponse JSON avec un message d'erreur
         res.json({ result: false, error: 'User not found' });
-      } else {
-        // Récupérer la liste des objets de l'utilisateur avec les communautés correspondantes
-        const userObjects = user.object;
-
-        // Réponse JSON avec la liste des objets de l'utilisateur
-        res.json({ result: true, objects: userObjects });
+        return;
       }
+
+      // Rechercher tous les objets associés à l'utilisateur par son idUser
+      Object.find({ idUser: user._id })
+        .populate('availableIn')
+        .then((objects) => {
+          // Vérifier si l'objet existe déjà dans la base de données pour l'utilisateur concerné
+          if (objects.length === 0) {
+            res.json({ result: false, error: 'No objects for this user' });
+            return;
+          } else {
+            const objectNames = objects.map((obj) => obj.name);
+            res.json({ result: true, objects: objectNames });
+          }
+        })
+        .catch((err) => {
+          // En cas d'erreur, renvoyer une réponse JSON avec le statut d'erreur
+          res.json({ result: false, error: 'An error occurred' });
+        });
     })
     .catch((err) => {
       // En cas d'erreur, renvoyer une réponse JSON avec le statut d'erreur
@@ -180,7 +185,6 @@ router.get('/profil/:token/objects', (req, res) => {
 
 // POST : Route pour ajouter une adresse à un utilisateur ou la mettre à jour
 //TODO 1) générer et enregistrer latitude et longitude api gouvernement
-//TODO 2) pour l'instant, cette route permet d'ajouter/mettre à jour une seule adresse ! à corriger
 router.post('/profil/:token/address', async (req, res) => {
   // Vérifier si les champs obligatoires sont présents dans le corps de la requête
   if (!checkBody(req.body, ['street', 'zipCode', 'city'])) {
@@ -198,12 +202,12 @@ router.post('/profil/:token/address', async (req, res) => {
     }
 
     // Vérifier si l'adresse existe déjà dans le profil de l'utilisateur
-    const addressIndex = user.address.findIndex((addr) => addr.name === req.body.name);
+    const addressIndex = user.address.findIndex((addr) => addr.street === req.body.street);
 
     if (addressIndex !== -1) {
       // Si l'adresse existe déjà, mettre à jour l'adresse
       user.address[addressIndex] = {
-        name: req.body.name,
+        // name: req.body.name,
         street: req.body.street,
         zipCode: req.body.zipCode,
         city: req.body.city,
@@ -213,7 +217,7 @@ router.post('/profil/:token/address', async (req, res) => {
     } else {
       // Si l'adresse n'existe pas, l'ajouter à la liste des adresses de l'utilisateur
       user.address.push({
-        name: req.body.name,
+        // name: req.body.name,
         street: req.body.street,
         zipCode: req.body.zipCode,
         city: req.body.city,
@@ -234,7 +238,7 @@ router.post('/profil/:token/address', async (req, res) => {
   }
 });
 
-//GET : Route pour afficher toutes les communités d'un user
+//GET : Route pour afficher toutes les adresses d'un user
 router.get('/profil/:token/addresses', (req, res) => {
   User.findOne({ token: req.params.token })
   .populate('adresses')
@@ -243,10 +247,10 @@ router.get('/profil/:token/addresses', (req, res) => {
       // Si l'utilisateur n'est pas trouvé, renvoyer une réponse JSON avec un message d'erreur
       res.json({ result: false, error: 'User not found' });
     } else {
-      // Récupérer la liste des objets de l'utilisateur avec les communautés correspondantes
+      // Récupérer la liste des adresses de l'utilisateur avec les communautés correspondantes
       const userAddresses = user.addresses;
 
-      // Réponse JSON avec la liste des objets de l'utilisateur
+      // Réponse JSON avec la liste des adresses de l'utilisateur
       res.json({ result: true, addresses: userAddresses });
     }
   })
@@ -257,8 +261,8 @@ router.get('/profil/:token/addresses', (req, res) => {
 });
 
 
-//GET : Route pour afficher les adresses d'un utilisateur
-router.get('/profil/:token/address', (req, res) => {
+//GET : Route pour afficher les communautés d'un utilisateur
+router.get('/profil/:token/communities', (req, res) => {
   User.findOne({ token: req.params.token })
   .populate('community')
   .then((user) => {
@@ -267,10 +271,10 @@ router.get('/profil/:token/address', (req, res) => {
       res.json({ result: false, error: 'User not found' });
     } else {
       // Récupérer la liste des objets de l'utilisateur avec les communautés correspondantes
-      const userAddresses = user.address;
+      const userCommunities = user.community;
 
       // Réponse JSON avec la liste des objets de l'utilisateur
-      res.json({ result: true, addresses: userAddresses });
+      res.json({ result: true, communities: userCommunities });
     }
   })
   .catch((err) => {
@@ -280,10 +284,10 @@ router.get('/profil/:token/address', (req, res) => {
 });
 
 //ROUTES DELETE
-//DELETE : Supprimer un user ==> PROBLEME : SUPPRIME LE 1er USER DE LA LISTE
+//DELETE : Supprimer un user 
 router.delete("/profil/:token", (req, res) => {
   User.deleteOne({
-    email: { $regex: new RegExp(req.params.email, "i") },
+    token: { $regex: new RegExp(req.params.token, "i") },
   }).then(deletedDoc => {
     console.log('deletedDoc1',deletedDoc)
     if (deletedDoc.deletedCount > 0) {
@@ -299,25 +303,98 @@ router.delete("/profil/:token", (req, res) => {
   });
 });
 
-//DELETE : Supprimer une communauté ==> NON TESTEE
-router.delete("/profil/:token", (req, res) => {
-  User.deleteOne({
-    email: { $regex: new RegExp(req.params.email, "i") },
-  }).then(deletedDoc => {
-    console.log('deletedDoc1',deletedDoc)
-    if (deletedDoc.deletedCount > 0) {
-      console.log('deletedDoc2',deletedDoc)
-      // document successfully deleted
-      //afficher la liste des users restants
-      User.find().then(data => {
-        res.json({ result: true, user: data });
-      });
-    } else {
-      res.json({ result: false, error: "User not found" });
-    }
-  });
+//DELETE : Se désinscrire d'une communauté ==> NON TESTEE
+router.delete('/profil/:token/:communityId', (req, res) => {
+  const token = req.params.token;
+  const communityId = req.params.communityId;
+
+  User.findOneAndUpdate(
+    { token: token },
+    { $pull: { community: communityId } },
+    { new: true }
+  )
+    .populate('community') // Pour peupler la liste des communautés de l'utilisateur après la mise à jour
+    .then((user) => {
+      if (!user) {
+        res.json({ result: false, error: 'User not found' });
+      } else {
+        res.json({ result: true, communities: user.community });
+      }
+    })
+    .catch((err) => {
+      res.json({ result: false, error: 'An error occurred' });
+    });
 });
 
+// DELETE : Route pour supprimer une adresse spécifique d'un utilisateur
+router.delete('/profil/:token/address/:addressId', async (req, res) => {
+  const token = req.params.token;
+  const addressId = req.params.addressId;
+
+  try {
+    const user = await User.findOne({ token: token });
+
+    if (!user) {
+      return res.json({ result: false, error: 'User not found' });
+    }
+
+    // Vérifier si 'user.addresses' est défini et est un tableau avant d'utiliser 'findIndex'
+    if (!Array.isArray(user.address)) {
+      return res.json({ result: false, error: 'Addresses not found or not an array' });
+    }
+
+    // Vérifier si l'adresse avec l'ID spécifié existe dans le tableau 'addresses'
+    const addressIndex = user.address.findIndex((address) => address._id.toString() === addressId);
+
+    if (addressIndex === -1) {
+      return res.json({ result: false, error: 'Address not found' });
+    }
+
+    // Supprimer l'adresse du tableau 'addresses'
+    user.address.splice(addressIndex, 1);
+
+    // Enregistrer les modifications dans la base de données
+    await user.save();
+
+    // Répondre avec les adresses restantes de l'utilisateur
+    return res.json({ result: true, addresses: user.address });
+  } catch (err) {
+    console.error(err); // Afficher l'erreur dans la console pour le débogage
+    return res.json({ result: false, error: 'An error occurred' });
+  }
+});
+
+//DELETE : supprimer un objet
+router.delete('/objects/:token/:objectId', async (req, res) => {
+  try {
+    const token = req.params.token;
+    const objectId = req.params.objectId;
+
+    // Vérifier si l'utilisateur existe en fonction du token fourni dans l'URL
+    const user = await User.findOne({ token });
+    if (!user) {
+      return res.json({ result: false, error: 'User not found' });
+    }
+
+    // Vérifier si l'objet existe avant de le supprimer
+    const object = await Object.findById(objectId);
+    if (!object) {
+      return res.status(404).json({ message: "L'objet n'existe pas." });
+    }
+
+    // Vérifier si l'objet appartient à l'utilisateur avant de le supprimer
+    if (!object.idUser.equals(user._id)) {
+      return res.status(403).json({ message: "Vous n'êtes pas autorisé à supprimer cet objet." });
+    }
+
+    // Supprimer l'objet de la base de données
+    await Object.findByIdAndDelete(objectId);
+
+    res.json({ message: "L'objet a été supprimé avec succès." });
+  } catch (error) {
+    res.status(500).json({ message: "Une erreur est survenue lors de la suppression de l'objet." });
+  }
+});
 //Autre route ProfileScreen: Afficher l'historique des prêts d'un user, dans toutes les communautés (sans doublons)
 
 //Autre route bis ProfileScreen: Afficher l'historique des emprunts d'un user, dans toutes les communautés (sans doublons)
