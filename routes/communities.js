@@ -86,4 +86,6 @@ router.post("/create", async (req, res) => {
   });
 });
 
+// supprimer une communauté
+
 module.exports = router;
