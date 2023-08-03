@@ -101,6 +101,9 @@ router.get('/feed/:token', async (req, res) => {
 	const ownObjects = await Object.find({ idUser: user._id }, '_id');
 	const objectsfound = await Object.find({ _id: { $nin: ownObjects }, isAvailable: true, availableIn: { $in: listCommu } }).populate('idUser');
 
+	/* Calcul de la distance des objets */
+	
+
 	res.json({ result: true, items: objectsfound });
 });
 
