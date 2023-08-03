@@ -12,6 +12,8 @@ var communitiesRouter = require('./routes/communities');
 var searchRouter = require('./routes/search');
 
 var app = express();
+const fileUpload = require('express-fileupload');
+app.use(fileUpload());
 
 const cors = require('cors');
 app.use(cors());
