@@ -1,18 +1,19 @@
-var express = require("express");
+var express = require('express');
 var router = express.Router();
 
-const User = require("../models/users");
-const Community = require("../models/communities");
-const { checkBody } = require("../modules/checkBody");
-const { default: mongoose } = require("mongoose");
-const Object = require("../models/objects");
+const User = require('../models/users');
+const Community = require('../models/communities');
+const { checkBody } = require('../modules/checkBody');
+const { default: mongoose } = require('mongoose');
+const Object = require('../models/objects');
+const { greatCircleDistance } = require('../modules/calcDistance');
 
 /**
  * POST - Join a community
  */
-router.post("/join", async (req, res) => {
-	if (!checkBody(req.body, ["token", "accessCode", "name"])) {
-		res.json({ result: false, error: "Missing or invalid field" });
+router.post('/join', async (req, res) => {
+	if (!checkBody(req.body, ['token', 'accessCode', 'name'])) {
+		res.json({ result: false, error: 'Missing or invalid field' });
 		return;
 	}
 
@@ -22,7 +23,7 @@ router.post("/join", async (req, res) => {
 	const user = await User.findOne({ token });
 
 	if (user.community.includes(commu._id)) {
-		res.json({ result: false, error: "Community already joined" });
+		res.json({ result: false, error: 'Community already joined' });
 		return;
 	} else if (commu.accessCode === accessCode) {
 		const updateRes = await User.updateOne(
@@ -36,14 +37,14 @@ router.post("/join", async (req, res) => {
 			name: commu.name,
 		});
 	} else {
-		res.json({ result: false, error: "Wrong access code" });
+		res.json({ result: false, error: 'Wrong access code' });
 	}
 });
 
 const generateRandomAccessCode = (length) => {
 	const characters =
-		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-	let accessCode = "";
+		'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+	let accessCode = '';
 	for (let i = 0; i < length; i++) {
 		const randomIndex = Math.floor(Math.random() * characters.length);
 		accessCode += characters[randomIndex];
@@ -54,7 +55,7 @@ const generateRandomAccessCode = (length) => {
 /**
  * POST - Création d'une communauté par User
  */
-router.post("/create", async (req, res) => {
+router.post('/create', async (req, res) => {
 	const { name, localisation, description, photo, isPrivate } = req.body;
 
 	// Vérifier si il y a une commu avec le même nom dans la base de données
@@ -63,7 +64,7 @@ router.post("/create", async (req, res) => {
 		// Une commu avec le même nom existe déjà
 		return res.json({
 			result: false,
-			error: "Une communauté avec le même nom existe déjà",
+			error: 'Une communauté avec le même nom existe déjà',
 		});
 	}
 
@@ -80,9 +81,7 @@ router.post("/create", async (req, res) => {
 		isPrivate,
 	});
 
-
 	await newCommunity.save();
-
 
 	res.json({
 		result: true,
@@ -101,10 +100,43 @@ router.get('/feed/:token', async (req, res) => {
 	const ownObjects = await Object.find({ idUser: user._id }, '_id');
 	const objectsfound = await Object.find({ _id: { $nin: ownObjects }, isAvailable: true, availableIn: { $in: listCommu } }).populate('idUser');
 
-	/* Calcul de la distance des objets */
-	
+	/* Calcul de la distance des objets (en km) */
+	const items = objectsfound.map((obj) => {
+		// Reconstruction de l'objet (imposible de write un retour de mongoose ??)
+		let res = { 
+			_id: obj._id,
+			name: obj.name,
+			isAvailable: obj.isAvailable,
+			availableIn: obj.availableIn,
+			owner: {
+				token: obj.idUser.token,
+				username: obj.idUser.username,
+				address: {
+					street: obj.idUser.address[0].street,
+					zipCode: obj.idUser.address[0].zipCode,
+					city: obj.idUser.address[0].city,
+					latitude: obj.idUser.address[0].latitude,
+					longitude: obj.idUser.address[0].longitude,
+				}
+			}
+		};
 
-	res.json({ result: true, items: objectsfound });
+		// Distance avec l'objet
+		const myLoc = { latitude: user.address[0].latitude, longitude: user.address[0].longitude };
+		const objLoc = { latitude: obj.idUser.address[0].latitude, longitude: obj.idUser.address[0].longitude };
+
+		const distance = greatCircleDistance(
+			myLoc.latitude,
+			myLoc.longitude,
+			objLoc.latitude,
+			objLoc.longitude
+		);
+
+		res['distance'] = distance;
+		return res;
+	}); 
+
+	res.json({ result: true, items });
 });
 
 // supprimer une communauté

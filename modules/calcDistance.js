@@ -24,4 +24,4 @@ const greatCircleDistance = (lat1, lon1, lat2, lon2) => {
   return Number(distance.toFixed(2));
 }
 
-export default { degreesToRadians, greatCircleDistance };
+module.exports = { greatCircleDistance };
