@@ -17,7 +17,7 @@ router.post('/signup', (req, res) => {
     return;
   }
   // Check if the user has not already been registered, then user is saved in database
-  User.findOne({ email: {$regex: new RegExp(req.body.email, 'i')}}).then(data => {
+  User.findOne({ email: { $regex: new RegExp(req.body.email, 'i') } }).then(data => {
     if (data === null) {
       const hash = bcrypt.hashSync(req.body.password, 10);
 
@@ -54,7 +54,7 @@ router.post('/signin', (req, res) => {
   }
 
   // Check if the user has an account, so he can login
-  User.findOne({ email: {$regex: new RegExp(req.body.email, 'i')} }).then(data => {
+  User.findOne({ email: { $regex: new RegExp(req.body.email, 'i') } }).then(data => {
     if (data && bcrypt.compareSync(req.body.password, data.password)) {
       res.json({ result: true, token: data.token });
     } else {
@@ -64,14 +64,15 @@ router.post('/signin', (req, res) => {
 });
 
 /* GET users profil */
-router.get('/profil/:token', (req, res) => {
+router.get('/profil/:token', (req, res) => {
   User.findOne({ token: req.params.token }).then(userfound => {
     console.log(userfound.address)
     if (userfound) {
-      res.json({ result: true, 
+      res.json({
+        result: true,
         firstname: userfound.firstname,
         lastname: userfound.lastname,
-        username: userfound.username ,
+        username: userfound.username,
         email: userfound.email,
         phone: userfound.phone,
         photo: userfound.photo,
@@ -105,7 +106,7 @@ router.post('/profil/object/:token', async (req, res) => {
   }
 
   // Vérifier si l'objet existe déjà dans la base de données pour le user concerné
-  const existingObject = await Object.findOne({ name: { $regex: new RegExp(req.body.name, 'i')}, idUser: user._id });
+  const existingObject = await Object.findOne({ name: { $regex: new RegExp(req.body.name, 'i') }, idUser: user._id });
   if (existingObject) {
     res.json({ result: false, error: 'Object already exists for this user' });
     return;
@@ -211,8 +212,8 @@ router.post('/profil/:token/address', async (req, res) => {
         street: req.body.street,
         zipCode: req.body.zipCode,
         city: req.body.city,
-        // latitude: 
-        // longitude: 
+        latitude: req.body.latitude,
+        longitude: req.body.longitude
       };
     } else {
       // Si l'adresse n'existe pas, l'ajouter à la liste des adresses de l'utilisateur
@@ -221,9 +222,9 @@ router.post('/profil/:token/address', async (req, res) => {
         street: req.body.street,
         zipCode: req.body.zipCode,
         city: req.body.city,
-// TODO :  ====>  trouver un moyen de récupérer la latitude et la longitude avec l'API du gouvernement
-        // latitude: 
-        // longitude: 
+        // TODO :  ====>  trouver un moyen de récupérer la latitude et la longitude avec l'API du gouvernement
+        latitude: req.body.latitude,
+        longitude: req.body.longitude
       });
     }
 
@@ -241,46 +242,46 @@ router.post('/profil/:token/address', async (req, res) => {
 //GET : Route pour afficher toutes les adresses d'un user
 router.get('/profil/:token/addresses', (req, res) => {
   User.findOne({ token: req.params.token })
-  .populate('adresses')
-  .then((user) => {
-    if (!user) {
-      // Si l'utilisateur n'est pas trouvé, renvoyer une réponse JSON avec un message d'erreur
-      res.json({ result: false, error: 'User not found' });
-    } else {
-      // Récupérer la liste des adresses de l'utilisateur avec les communautés correspondantes
-      const userAddresses = user.addresses;
+    .populate('adresses')
+    .then((user) => {
+      if (!user) {
+        // Si l'utilisateur n'est pas trouvé, renvoyer une réponse JSON avec un message d'erreur
+        res.json({ result: false, error: 'User not found' });
+      } else {
+        // Récupérer la liste des adresses de l'utilisateur avec les communautés correspondantes
+        const userAddresses = user.addresses;
 
-      // Réponse JSON avec la liste des adresses de l'utilisateur
-      res.json({ result: true, addresses: userAddresses });
-    }
-  })
-  .catch((err) => {
-    // En cas d'erreur, renvoyer une réponse JSON avec le statut d'erreur
-    res.json({ result: false, error: 'An error occurred' });
-  });
+        // Réponse JSON avec la liste des adresses de l'utilisateur
+        res.json({ result: true, addresses: userAddresses });
+      }
+    })
+    .catch((err) => {
+      // En cas d'erreur, renvoyer une réponse JSON avec le statut d'erreur
+      res.json({ result: false, error: 'An error occurred' });
+    });
 });
 
 
 //GET : Route pour afficher les communautés d'un utilisateur
 router.get('/profil/:token/communities', (req, res) => {
   User.findOne({ token: req.params.token })
-  .populate('community')
-  .then((user) => {
-    if (!user) {
-      // Si l'utilisateur n'est pas trouvé, renvoyer une réponse JSON avec un message d'erreur
-      res.json({ result: false, error: 'User not found' });
-    } else {
-      // Récupérer la liste des objets de l'utilisateur avec les communautés correspondantes
-      const userCommunities = user.community;
+    .populate('community')
+    .then((user) => {
+      if (!user) {
+        // Si l'utilisateur n'est pas trouvé, renvoyer une réponse JSON avec un message d'erreur
+        res.json({ result: false, error: 'User not found' });
+      } else {
+        // Récupérer la liste des objets de l'utilisateur avec les communautés correspondantes
+        const userCommunities = user.community;
 
-      // Réponse JSON avec la liste des objets de l'utilisateur
-      res.json({ result: true, communities: userCommunities });
-    }
-  })
-  .catch((err) => {
-    // En cas d'erreur, renvoyer une réponse JSON avec le statut d'erreur
-    res.json({ result: false, error: 'An error occurred' });
-  });
+        // Réponse JSON avec la liste des objets de l'utilisateur
+        res.json({ result: true, communities: userCommunities });
+      }
+    })
+    .catch((err) => {
+      // En cas d'erreur, renvoyer une réponse JSON avec le statut d'erreur
+      res.json({ result: false, error: 'An error occurred' });
+    });
 });
 
 //ROUTES DELETE
@@ -289,9 +290,9 @@ router.delete("/profil/:token", (req, res) => {
   User.deleteOne({
     token: { $regex: new RegExp(req.params.token, "i") },
   }).then(deletedDoc => {
-    console.log('deletedDoc1',deletedDoc)
+    console.log('deletedDoc1', deletedDoc)
     if (deletedDoc.deletedCount > 0) {
-      console.log('deletedDoc2',deletedDoc)
+      console.log('deletedDoc2', deletedDoc)
       // document successfully deleted
       //afficher la liste des users restants
       User.find().then(data => {
