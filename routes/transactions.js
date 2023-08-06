@@ -57,5 +57,48 @@ router.post("/borrow/:token", async (req, res) => {
   });
   
   
+  router.post("/return/:token", async (req, res) => {
+    try {
+      // Récupérer l'utilisateur emprunteur à partir du token
+      const borrowerUser = await User.findOne({ token: req.params.token });
+      if (!borrowerUser) {
+        res.json({ result: false, error: 'Utilisateur emprunteur non trouvé' });
+        return;
+      }
+  
+      // Récupérer l'objet emprunté
+      const object = await Object.findById(req.body.objectId);
+      if (!object) {
+        res.json({ result: false, error: 'Objet emprunté non trouvé' });
+        return;
+      } 
+  
+      // Récupérer l'utilisateur prêteur à partir du schéma Object
+      const lenderUser = await User.findById(object.idUser);
+      if (!lenderUser) {
+        res.json({ result: false, error: 'Utilisateur prêteur non trouvé' });
+        return;
+      } 
+      
+      //Récupérer la transaction
+      const transaction = await Transaction.findById(req.body.transactionId);
+      if (!transaction) {
+        res.json({ result: false, error: 'Transaction non trouvée' });
+        return;
+      } 
+  
+      // Mettre à jour le statut de la transaction
+      transaction.isFinished = true;
+      await transaction.save();
 
+      // Mettre à jour le statut de disponibilité de l'objet
+      object.isAvailable = false;
+      await object.save();
+  
+      res.json({ message: "Objet rendu avec succès !! :D" });
+    } catch (error) {
+      console.error("Erreur retour objet:", error.message);
+      res.status(500).json({ error: "Internal server error." });
+    }
+  })
   module.exports = router;
