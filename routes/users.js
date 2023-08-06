@@ -169,7 +169,7 @@ router.get('/profil/objects/:token', (req, res) => {
             res.json({ result: false, error: 'No objects for this user' });
             return;
           } else {
-            const objectNames = objects.map((obj) => obj.name);
+            const objectNames = objects.map((obj) => obj);  // a verif ??? obj.name 
             res.json({ result: true, objects: objectNames });
           }
         })
