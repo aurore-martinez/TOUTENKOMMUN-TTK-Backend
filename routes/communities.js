@@ -55,8 +55,21 @@ const generateRandomAccessCode = (length) => {
 /**
  * POST - Création d'une communauté par User
  */
-router.post('/create', async (req, res) => {
+router.post('/create/:token', async (req, res) => {
+
+	if (!checkBody(req.body, ['name'])) {
+		res.json({ result: false, error: 'Missing or invalid field' });
+		return;
+	}
+
 	const { name, localisation, description, photo, isPrivate } = req.body;
+
+	// Récupère l'utilisateur en fonction du token
+	const user = await User.findOne({ token : req.params.token });
+
+  	if (!user) {
+    	return res.json({ result: false, error: 'User not found' });
+  	}
 
 	// Vérifier si il y a une commu avec le même nom dans la base de données
 	const existingCommunity = await Community.findOne({ name });
@@ -81,14 +94,24 @@ router.post('/create', async (req, res) => {
 		isPrivate,
 	});
 
-	await newCommunity.save();
+  	// Enregistrer la nouvelle communauté dans la base de données
+  	await newCommunity.save();
 
 	res.json({
 		result: true,
 		accessCode: newCommunity.accessCode,
 		name: newCommunity.name,
 	});
+
+	// Partie qui adhère à la commu crée 
+  	// Ajoute l'ID de la nouvelle communauté à la liste des communautés du user
+  	user.community.push(newCommunity._id);
+
+  	// Enregistrer les modifications apportées au user (ajout de la communauté)
+  	await user.save();
+	  console.log("L'utilisateur a bien adhéré à sa communauté crée");
 });
+
 
 /**
  * GET - Récupération des objets dispo dans les communautés de User (sauf les siens)
