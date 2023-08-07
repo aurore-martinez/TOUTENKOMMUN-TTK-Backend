@@ -203,7 +203,7 @@ router.post('/profil/:token/address', async (req, res) => {
     }
 
     // Vérifier si l'adresse existe déjà dans le profil de l'utilisateur
-    const addressIndex = user.address.findIndex((addr) => addr.street === req.body.street);
+    const addressIndex = user.address.findIndex((addr) => addr.street !== req.body.street);
 
     if (addressIndex !== -1) {
       // Si l'adresse existe déjà, mettre à jour l'adresse
