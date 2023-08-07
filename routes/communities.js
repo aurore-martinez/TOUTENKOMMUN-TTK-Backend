@@ -131,6 +131,8 @@ router.get('/feed/:token', async (req, res) => {
 			name: obj.name,
 			isAvailable: obj.isAvailable,
 			availableIn: obj.availableIn,
+      photo: obj.photo,
+      description: obj.description,
 			owner: {
 				token: obj.idUser.token,
 				username: obj.idUser.username,
