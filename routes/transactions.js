@@ -116,6 +116,8 @@ router.get('/borrow/:token', (req, res) => {
       // Rechercher tous les emprunts associés à l'utilisateur par son id_borrowerUser
       Transaction.find({ borrowerUser: user._id })
         .populate('object')
+        .populate('lenderUser', 'username') // Charger les détails de lenderUser avec uniquement le champ username
+        .populate('borrowerUser', 'username') // Charger les détails de borrowerUser avec uniquement le champ username
         .then((emprunts) => {
           // Vérifier si l'emprunt existe déjà dans la base de données pour l'utilisateur concerné
           if (emprunts.length === 0) {
@@ -151,6 +153,8 @@ router.get('/borrow/:token', (req, res) => {
         // Rechercher tous les emprunts associés à l'utilisateur par son id_borrowerUser
         Transaction.find({ lenderUser: user._id })
           .populate('object')
+          .populate('lenderUser', 'username') // Charger les détails de lenderUser avec uniquement le champ username
+          .populate('borrowerUser', 'username') // Charger les détails de borrowerUser avec uniquement le champ username
           .then((prets) => {
             // Vérifier si l'emprunt existe déjà dans la base de données pour l'utilisateur concerné
             if (prets.length === 0) {
