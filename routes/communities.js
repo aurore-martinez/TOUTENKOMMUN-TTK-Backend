@@ -164,6 +164,20 @@ router.get('/feed/:token', async (req, res) => {
 	res.json({ result: true, items });
 });
 
+/**
+ * GET - Récupération des communautés de USER
+ */
+router.get('/:token', async (req, res) => {
+	const user = await User.findOne({ token: req.params.token }, 'community').populate('community');
+
+	if (!user) {
+		res.json({ result: false, error: 'User not found' });
+		return;
+	}
+
+	res.json({ result: true, communities: user.community });
+});
+
 // supprimer une communauté
 
 module.exports = router;
