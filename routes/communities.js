@@ -121,16 +121,20 @@ router.get('/feed/:token', async (req, res) => {
 
 	const listCommu = user.community.map(id => new mongoose.Types.ObjectId(id));
 	const ownObjects = await Object.find({ idUser: user._id }, '_id');
-	const objectsfound = await Object.find({ _id: { $nin: ownObjects }, isAvailable: true, availableIn: { $in: listCommu } }).populate('idUser');
+	const objectsfound = await Object.find({ _id: { $nin: ownObjects }, isAvailable: true, availableIn: { $in: listCommu } }).populate('idUser').populate('availableIn');
 
 	/* Calcul de la distance des objets (en km) */
 	const items = objectsfound.map((obj) => {
+		const nameAndIdCommu = obj.availableIn.map(commu => {
+			if (user.community.includes(commu._id)) return { id: commu._id, nameCommu: commu.name };
+		}).filter(Boolean);
+		
 		// Reconstruction de l'objet (imposible de write un retour de mongoose ??)
 		let res = { 
 			_id: obj._id,
 			name: obj.name,
 			isAvailable: obj.isAvailable,
-			availableIn: obj.availableIn,
+			availableIn: nameAndIdCommu,
       photo: obj.photo,
       description: obj.description,
 			owner: {
