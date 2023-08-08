@@ -4,6 +4,8 @@ const router = express.Router();
 const Object = require('../models/objects');
 const User = require('../models/users');
 const Transaction = require('../models/transactions');
+const ObjectID = require('mongoose').Types.ObjectId;
+const Room = require('../models/rooms');
 
 
 /**
@@ -176,4 +178,46 @@ router.get('/borrow/:token', (req, res) => {
       });
   });
 
+
+// Route pour afficher la liste des chat rooms d'un utilisateur en fonction du token
+router.get('/:token', (req, res) => {
+  const userToken = req.params.token;
+
+  User.findOne({ token: userToken })
+    .then((user) => {
+      if (!user) {
+        res.json({ result: false, error: 'User not found' });
+        return;
+      }
+
+      // Récupérer toutes les chat rooms où l'utilisateur est soit prêteur (lender) soit emprunteur (borrower)
+      Room.find({ $or: [{ lenderUser: new ObjectID(user._id) }, { borrowerUser: new ObjectID(user._id) }] })
+        .populate('lenderUser', '_id firstname lastname') // Remplacer les champs souhaités du modèle User
+        .populate('borrowerUser', '_id firstname lastname') // Remplacer les champs souhaités du modèle User
+        .then((rooms) => {
+          console.log('rooms', rooms);
+          if (!rooms || rooms.length === 0) {
+            res.json({ result: false, error: 'No chat rooms found for the user' });
+            return;
+          }
+
+          // Vous pouvez maintenant effectuer une redirection vers l'écran approprié
+          // composé du token des deux utilisateurs (lender et borrower) de chaque chat room
+          // Par exemple, vous pouvez renvoyer simplement la liste des chat rooms dans la réponse
+          res.json({ result: true, rooms });
+        })
+        .catch((error) => {
+          res.json({ result: false, error: 'Error while fetching chat rooms' });
+        });
+    })
+    .catch((error) => {
+      res.json({ result: false, error: 'Error while finding user' });
+    });
+});
+
+
+// afficher la liste des chats room d'un utilisateur
+// récuperer toutes les chats room ou notre user est soit un lender soit un borrower avec token et non idUser
+// une redirection vers le bon écran composé du token des 2 utilisateurs
+  
   module.exports = router;
