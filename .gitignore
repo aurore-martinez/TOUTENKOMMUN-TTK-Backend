@@ -62,3 +62,4 @@ typings/
 
 # Custom
 .yarn
+.DS_Store
