@@ -39,6 +39,7 @@ router.post("/borrow/:token", async (req, res) => {
         borrowerUser: borrowerUser._id,
         object: object._id,
         startDate: new Date(),
+        endDate: req.body.endDate,
         isFinished: false,
       });
   
@@ -89,6 +90,7 @@ router.post("/borrow/:token", async (req, res) => {
   
       // Mettre à jour le statut de la transaction
       transaction.isFinished = true;
+      // transaction.endDate = new Date(),
       await transaction.save();
 
       // Mettre à jour le statut de disponibilité de l'objet
