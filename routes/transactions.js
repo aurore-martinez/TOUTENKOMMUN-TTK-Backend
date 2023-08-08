@@ -92,7 +92,7 @@ router.post("/borrow/:token", async (req, res) => {
       await transaction.save();
 
       // Mettre à jour le statut de disponibilité de l'objet
-      object.isAvailable = false;
+      object.isAvailable = true;
       await object.save();
   
       res.json({ message: "Objet rendu avec succès !! :D" });
@@ -101,4 +101,75 @@ router.post("/borrow/:token", async (req, res) => {
       res.status(500).json({ error: "Internal server error." });
     }
   })
+
+
+  //GET borrow : Route Afficher les emprunts d'un user, peu importe la/les communautés rattachées aux objets
+router.get('/borrow/:token', (req, res) => {
+  // Vérifier si des objets existent en fonction du token fourni dans l'URL
+  User.findOne({ token: req.params.token })
+    .then((user) => {
+      if (!user) {
+        res.json({ result: false, error: 'User not found' });
+        return;
+      }
+
+      // Rechercher tous les emprunts associés à l'utilisateur par son id_borrowerUser
+      Transaction.find({ borrowerUser: user._id })
+        .populate('object')
+        .then((emprunts) => {
+          // Vérifier si l'emprunt existe déjà dans la base de données pour l'utilisateur concerné
+          if (emprunts.length === 0) {
+            res.json({ result: false, error: 'No borrow for this user' });
+            return;
+          } else {
+            const empruntsList = emprunts.map((obj) => obj);  
+            res.json({ result: true, emprunts: empruntsList });
+          }
+        })
+        .catch((err) => {
+          // En cas d'erreur, renvoyer une réponse JSON avec le statut d'erreur
+          res.json({ result: false, error: 'An error occurred' });
+        });
+    })
+    .catch((err) => {
+      // En cas d'erreur, renvoyer une réponse JSON avec le statut d'erreur
+      res.json({ result: false, error: 'An error occurred' });
+    });
+});
+
+
+  //GET lend : Afficher les emprunts d'un user, peu importe la/les communautés rattachées aux objets
+  router.get('/lend/:token', (req, res) => {
+    // Vérifier si des objets existent en fonction du token fourni dans l'URL
+    User.findOne({ token: req.params.token })
+      .then((user) => {
+        if (!user) {
+          res.json({ result: false, error: 'User not found' });
+          return;
+        }
+  
+        // Rechercher tous les emprunts associés à l'utilisateur par son id_borrowerUser
+        Transaction.find({ lenderUser: user._id })
+          .populate('object')
+          .then((prets) => {
+            // Vérifier si l'emprunt existe déjà dans la base de données pour l'utilisateur concerné
+            if (prets.length === 0) {
+              res.json({ result: false, error: 'No borrow for this user' });
+              return;
+            } else {
+              const pretsList = prets.map((obj) => obj);  
+              res.json({ result: true, prets: pretsList });
+            }
+          })
+          .catch((err) => {
+            // En cas d'erreur, renvoyer une réponse JSON avec le statut d'erreur
+            res.json({ result: false, error: 'An error occurred' });
+          });
+      })
+      .catch((err) => {
+        // En cas d'erreur, renvoyer une réponse JSON avec le statut d'erreur
+        res.json({ result: false, error: 'An error occurred' });
+      });
+  });
+
   module.exports = router;
