@@ -179,6 +179,7 @@ router.get('/borrow/:token', (req, res) => {
   });
 
 
+// Non fonctionnel pour l'instant
 // Route pour afficher la liste des chat rooms d'un utilisateur en fonction du token
 router.get('/:token', (req, res) => {
   const userToken = req.params.token;
