@@ -39,16 +39,20 @@ router.post('/', async (req, res) => {
 	if (ownObjects.length > 0) { objFilter['_id'] = { $nin: ownObjects }; }
 
 	// On trouve les objets disponibles dans les communautés du User
-	const objectsfound = await Object.find(objFilter).populate('idUser');
+	const objectsfound = await Object.find(objFilter).populate('idUser').populate('availableIn');
 
 	/* Calcul de la distance des objets (en km) */
 	const items = objectsfound.map((obj) => {
+		const nameAndIdCommu = obj.availableIn.map(commu => {
+			if (user.community.includes(commu._id)) return { id: commu._id, nameCommu: commu.name };
+		}).filter(Boolean);
+	
 		// Reconstruction de l'objet (imposible de write un retour de mongoose ??)
 		let res = { 
 			_id: obj._id,
 			name: obj.name,
 			isAvailable: obj.isAvailable,
-			availableIn: obj.availableIn,
+			availableIn: nameAndIdCommu,
 			owner: {
 				token: obj.idUser.token,
 				username: obj.idUser.username,
