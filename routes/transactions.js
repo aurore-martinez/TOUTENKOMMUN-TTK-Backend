@@ -35,11 +35,21 @@ router.post("/borrow/:token", async (req, res) => {
       return;
     }
 
+    // Créer une nouvelle room
+    const newRoom = new Room({
+      lenderUser: lenderUser._id,
+      borrowerUser: borrowerUser._id,
+    });
+
+    // Sauvegarder la room dans la DB
+    const savedRoom = await newRoom.save();
+
     // Créer une nouvelle transaction = emprunt
     const newTransaction = new Transaction({
       lenderUser: lenderUser._id,
       borrowerUser: borrowerUser._id,
       object: object._id,
+      room: savedRoom._id, // Associer l'ID de la room à la transaction
       startDate: new Date(),
       endDate: req.body.endDate,
       isFinished: false,
@@ -194,4 +204,71 @@ router.get('/:token', async (req, res) => {
   }
 });
  
+//Route pour afficher toutes les rooms où le user est borrower (emprunteur)
+router.get('/borrower/:token', (req, res) => {
+  // Vérifier si l'utilisateur emprunteur existe en fonction du token fourni dans l'URL
+  User.findOne({ token: req.params.token })
+    .then((user) => {
+      if (!user) {
+        res.json({ result: false, error: 'User not found' });
+        return;
+      }
+
+      // Rechercher toutes les chambres associées à l'utilisateur en tant qu'emprunteur
+      Room.find({ borrowerUser: user._id })
+        .populate('lenderUser', 'username') // Charger les détails de lenderUser avec uniquement le champ username
+        .populate('borrowerUser', 'username') // Charger les détails de borrowerUser avec uniquement le champ username
+        .then((rooms) => {
+          // Vérifier si des chambres existent pour l'utilisateur en tant qu'emprunteur
+          if (rooms.length === 0) {
+            res.json({ result: false, error: 'No rooms for this borrower' });
+            return;
+          } else {
+            const roomsList = rooms.map((room) => room);
+            res.json({ result: true, rooms: roomsList });
+          }
+        })
+        .catch((err) => {
+          res.json({ result: false, error: 'An error occurred' });
+        });
+    })
+    .catch((err) => {
+      res.json({ result: false, error: 'An error occurred' });
+    });
+});
+
+//Route pour afficher toutes les rooms où le user est lender (prêteur)
+router.get('/lender/:token', (req, res) => {
+  // Vérifier si l'utilisateur prêteur existe en fonction du token fourni dans l'URL
+  User.findOne({ token: req.params.token })
+    .then((user) => {
+      if (!user) {
+        res.json({ result: false, error: 'User not found' });
+        return;
+      }
+
+      // Rechercher toutes les chambres associées à l'utilisateur en tant que prêteur
+      Room.find({ lenderUser: user._id })
+        .populate('lenderUser', 'username') // Charger les détails de lenderUser avec uniquement le champ username
+        .populate('borrowerUser', 'username') // Charger les détails de borrowerUser avec uniquement le champ username
+        .then((rooms) => {
+          // Vérifier si des chambres existent pour l'utilisateur en tant que prêteur
+          if (rooms.length === 0) {
+            res.json({ result: false, error: 'No rooms for this lender' });
+            return;
+          } else {
+            const roomsList = rooms.map((room) => room);
+            res.json({ result: true, rooms: roomsList });
+          }
+        })
+        .catch((err) => {
+          res.json({ result: false, error: 'An error occurred' });
+        });
+    })
+    .catch((err) => {
+      res.json({ result: false, error: 'An error occurred' });
+    });
+});
+
+
 module.exports = router;
