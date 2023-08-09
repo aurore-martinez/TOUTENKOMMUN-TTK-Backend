@@ -51,6 +51,7 @@ router.post('/', async (req, res) => {
 		let res = { 
 			_id: obj._id,
 			name: obj.name,
+			photo: obj.photo,
 			isAvailable: obj.isAvailable,
 			availableIn: nameAndIdCommu,
 			owner: {
