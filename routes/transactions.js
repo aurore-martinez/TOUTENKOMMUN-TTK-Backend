@@ -215,10 +215,10 @@ router.get('/borrower/:token', (req, res) => {
       }
 
       // Rechercher toutes les chambres associées à l'utilisateur en tant qu'emprunteur
-      Room.find({ borrowerUser: user._id })
+      Transaction.find({ borrowerUser: user._id })
         .populate('lenderUser', 'username') // Charger les détails de lenderUser avec uniquement le champ username
         .populate('borrowerUser', 'username') // Charger les détails de borrowerUser avec uniquement le champ username
-        .populate('object')// charger les détails l'objet
+        .populate('object') // charger les détails l'objet
         .then((rooms) => {
           // Vérifier si des chambres existent pour l'utilisateur en tant qu'emprunteur
           if (rooms.length === 0) {
