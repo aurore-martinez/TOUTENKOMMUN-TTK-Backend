@@ -218,6 +218,7 @@ router.get('/borrower/:token', (req, res) => {
       Room.find({ borrowerUser: user._id })
         .populate('lenderUser', 'username') // Charger les détails de lenderUser avec uniquement le champ username
         .populate('borrowerUser', 'username') // Charger les détails de borrowerUser avec uniquement le champ username
+        .populate('object')// charger les détails l'objet
         .then((rooms) => {
           // Vérifier si des chambres existent pour l'utilisateur en tant qu'emprunteur
           if (rooms.length === 0) {
@@ -248,16 +249,17 @@ router.get('/lender/:token', (req, res) => {
       }
 
       // Rechercher toutes les chambres associées à l'utilisateur en tant que prêteur
-      Room.find({ lenderUser: user._id })
+      Transaction.find({ lenderUser: user._id })
         .populate('lenderUser', 'username') // Charger les détails de lenderUser avec uniquement le champ username
         .populate('borrowerUser', 'username') // Charger les détails de borrowerUser avec uniquement le champ username
-        .then((rooms) => {
+        .populate('object') // charger les détails l'objet
+        .then((transactions) => {
           // Vérifier si des chambres existent pour l'utilisateur en tant que prêteur
-          if (rooms.length === 0) {
+          if (transactions.length === 0) {
             res.json({ result: false, error: 'No rooms for this lender' });
             return;
           } else {
-            const roomsList = rooms.map((room) => room);
+            const roomsList = transactions.map((room) => room);
             res.json({ result: true, rooms: roomsList });
           }
         })
