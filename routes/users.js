@@ -34,6 +34,8 @@ router.post('/signup', (req, res) => {
           street: req.body.address.street,
           zipCode: req.body.address.zipCode,
           city: req.body.address.city,
+          latitude: req.body.address.latitude,
+          longitude: req.body.address.longitude
         },
         community: [],
         object: [],
